@@ -49,3 +49,12 @@
   animation: scroll-line 2.6s infinite ease-in-out;
 }
 
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+

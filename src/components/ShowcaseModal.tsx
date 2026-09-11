@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Sparkles, ArrowRight, Filter, Layers } from 'lucide-react';
+import { X, Sparkles, ArrowRight, Filter, Layers, ChevronDown } from 'lucide-react';
 import { ShowcaseProject } from '../types';
 import { PROJECTS } from '../data/projects';
 import { ProjectDetailModal } from './ProjectDetailModal';
@@ -14,6 +14,19 @@ interface ShowcaseModalProps {
 export const ShowcaseModal: React.FC<ShowcaseModalProps> = ({ isOpen, onClose }) => {
   const [selectedProject, setSelectedProject] = useState<ShowcaseProject | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isFilterOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(e.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isFilterOpen]);
 
   const categories = [
     { id: 'all', label: 'All Works' },
@@ -74,25 +87,81 @@ export const ShowcaseModal: React.FC<ShowcaseModalProps> = ({ isOpen, onClose })
                 </button>
               </div>
 
-              {/* Filter Tabs with generous top and bottom padding */}
-              <div className="flex items-center gap-2.5 overflow-x-auto pt-4 pb-4 mb-3 no-scrollbar">
-                <span className="text-xs text-white/50 flex items-center gap-1.5 mr-1.5 shrink-0 font-medium">
-                  <Filter className="w-3.5 h-3.5 text-[#e8a36e]" />
-                  <span>Filter:</span>
-                </span>
-                {categories.map((cat) => (
+              {/* Filter: dropdown on mobile, pill tabs on sm+ */}
+              <div className="pt-4 pb-4 mb-3">
+                {/* Mobile dropdown */}
+                <div className="relative sm:hidden" ref={filterDropdownRef}>
                   <button
-                    key={cat.id}
-                    onClick={() => setActiveFilter(cat.id)}
-                    className={`px-4 py-2 rounded-full text-xs tracking-wider uppercase whitespace-nowrap transition-all cursor-pointer focus:outline-none ${
-                      activeFilter === cat.id
-                        ? 'bg-[#e8a36e] text-[#070a0e] font-semibold shadow-lg shadow-[#e8a36e]/20 scale-[1.02]'
-                        : 'bg-white/5 hover:bg-white/10 text-white/75 border border-white/15 hover:border-white/30 hover:text-white'
+                    type="button"
+                    onClick={() => setIsFilterOpen((v) => !v)}
+                    className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-full text-xs tracking-wider uppercase transition-all cursor-pointer focus:outline-none ${
+                      isFilterOpen
+                        ? 'bg-white/10 border border-[#e8a36e]/50 text-white'
+                        : 'bg-white/5 hover:bg-white/10 text-white/85 border border-white/15 hover:border-white/30'
                     }`}
                   >
-                    {cat.label}
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <Filter className="w-3.5 h-3.5 text-[#e8a36e] shrink-0" />
+                      <span className="truncate">
+                        {categories.find((c) => c.id === activeFilter)?.label}
+                      </span>
+                    </span>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 text-white/50 shrink-0 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`}
+                    />
                   </button>
-                ))}
+
+                  <AnimatePresence>
+                    {isFilterOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute left-0 right-0 mt-2 z-10 bg-[#0d121a] border border-white/15 rounded-2xl p-1.5 shadow-2xl"
+                      >
+                        {categories.map((cat) => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveFilter(cat.id);
+                              setIsFilterOpen(false);
+                            }}
+                            className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs tracking-wider uppercase transition-all cursor-pointer focus:outline-none ${
+                              activeFilter === cat.id
+                                ? 'bg-[#e8a36e] text-[#070a0e] font-semibold'
+                                : 'text-white/75 hover:bg-white/10 hover:text-white'
+                            }`}
+                          >
+                            {cat.label}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Desktop pill tabs */}
+                <div className="hidden sm:flex items-center gap-2.5 overflow-x-auto no-scrollbar">
+                  <span className="text-xs text-white/50 flex items-center gap-1.5 mr-1.5 shrink-0 font-medium">
+                    <Filter className="w-3.5 h-3.5 text-[#e8a36e]" />
+                    <span>Filter:</span>
+                  </span>
+                  {categories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setActiveFilter(cat.id)}
+                      className={`px-4 py-2 rounded-full text-xs tracking-wider uppercase whitespace-nowrap transition-all cursor-pointer focus:outline-none ${
+                        activeFilter === cat.id
+                          ? 'bg-[#e8a36e] text-[#070a0e] font-semibold shadow-lg shadow-[#e8a36e]/20 scale-[1.02]'
+                          : 'bg-white/5 hover:bg-white/10 text-white/75 border border-white/15 hover:border-white/30 hover:text-white'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Project Grid */}
